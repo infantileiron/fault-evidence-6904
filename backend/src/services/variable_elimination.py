@@ -4,6 +4,9 @@ from scipy.special import logsumexp
 from .network_validation import validate_network,validate_cpt,validate_evidence
 from .log_factor import cpt_factors,product
 
+class ImpossibleEvidence(ValueError):
+ """给定模型下证据联合概率严格为0（logZ=-inf）；有限但exp下溢的logZ不在此列。"""
+
 def infer(nodes,cpt,evidence,target):
  graph=validate_network(nodes);nodes=graph['nodes'];rows=validate_cpt(nodes,cpt);validate_evidence(nodes,evidence,target)
  factors=[factor.restrict(evidence) for factor in cpt_factors(nodes,rows)];order=sorted({n['node_id'] for n in nodes}-set(evidence)-{target});trace=[]
@@ -12,7 +15,7 @@ def infer(nodes,cpt,evidence,target):
   joined=product(bucket);reduced=joined.sum_out(variable);factors.append(reduced)
   trace.append({'variable':variable,'input_scopes':[list(f.variables) for f in bucket],'product_scope':list(joined.variables),'product_cells':int(joined.values.size),'output_scope':list(reduced.variables),'output_cells':int(reduced.values.size)})
  final=product(factors);log_z=float(logsumexp(final.values))
- if log_z==-math.inf:raise ValueError('不可能证据：logZ=-inf，给定模型下证据概率严格为0')
+ if log_z==-math.inf:raise ImpossibleEvidence('不可能证据：logZ=-inf，给定模型下证据概率严格为0')
  if not math.isfinite(log_z):raise ValueError('log证据概率非有限，推理失败')
  z=math.exp(log_z);underflow=z==0
  if target in evidence:log_probabilities=[0. if state==evidence[target] else -math.inf for state in (0,1)]

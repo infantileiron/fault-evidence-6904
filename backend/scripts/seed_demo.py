@@ -35,8 +35,11 @@ def seed():
    if not db.get(EvidenceCase,ident):db.add(EvidenceCase(id=ident,name=name,revision_id=rid,target=target,evidence=evidence,candidates=validate_evidence(nodes,evidence,target)))
   db.flush()
   if not db.get(InferenceRun,'demo-run'):db.add(InferenceRun(id='demo-run',case_id='demo-case',status='queued',result={},error=''))
-  db.commit();run=db.get(InferenceRun,'demo-run')
-  if run.status=='queued':compute(db,'demo-run')
+  if not db.get(InferenceRun,'zero-run'):db.add(InferenceRun(id='zero-run',case_id='zero-case',status='queued',result={},error=''))
+  db.commit()
+  for ident in ['demo-run','zero-run']:
+   run=db.get(InferenceRun,ident)
+   if run.status=='queued':compute(db,ident)
   run=db.get(InferenceRun,'demo-run')
   if run.status=='completed':
    if not db.get(EvidenceReview,'demo-review'):db.add(EvidenceReview(id='demo-review',run_id='demo-run',action='已核对CPT r1、证据logZ及候选分支；仅模拟研修，信息增益不等于故障修复收益。',state='approved',reviewer='admin@evidence.demo'));db.flush()
